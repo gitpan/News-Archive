@@ -1,0 +1,12 @@
+Revision history for Perl extension News::Archive
+
+0.11		Thu Apr 29 12:07:34 CDT 2004 
+	- News::Article::Mbox - falls back if the message wasn't a valid
+	  mbox to just looking at it as a single message.
+        - News::Archive - added some close functions.
+	- mbox2news.pl - now works on mboxes with just one message (or non-
+	  mboxes, as the case may be).  Got rid of newsarchive.pl accordingly.
+	- Added newsrecurse.pl.
+
+0.10		Wed Apr 28 17:00:44 CDT 2004 
+	- First releasable version; I'm far from releasing it though.

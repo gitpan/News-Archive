@@ -1,0 +1,13 @@
+=head1 NAME
+
+kibozerc - documentation on configuration files for News::Archive
+
+=head1 SYNOPSIS
+
+[to come]
+
+=head1 DESCRIPTION
+
+[to come]
+
+=cut

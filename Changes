@@ -1,5 +1,9 @@
 Revision history for Perl extension News::Archive
 
+0.13		Tue May 25 12:42:19 CDT 2004
+	- Added 'readonly' bits; it'll tide us over until we've got 
+	  file locking done.
+
 0.12		Thu Apr 29 13:50:07 CDT 2004
 	- Populated kibozerc.pod
 	- Minor bugfixes.

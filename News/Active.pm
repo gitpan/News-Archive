@@ -1,8 +1,8 @@
-$VERSION = "0.11";
+$VERSION = "0.12";
 package News::Active;
-our $VERSION = "0.11";
+our $VERSION = "0.12";
 
-# -*- Perl -*-          # Wed Apr 28 11:07:04 CDT 2004 
+# -*- Perl -*-          Tue May 25 11:25:03 CDT 2004 
 ###############################################################################
 # Written by Tim Skirvin <tskirvin@killfile.org>.  Copyright 2003-2004,
 # Tim Skirvin.  Redistribution terms are below.
@@ -35,9 +35,9 @@ to use and understand, as it is only a subsection of C<News::Archive>.
 
 =over 4
 
-=item $News::Active::DEBUG
+=item $News::Active::DEBUG - default value for C<debug()> in new objects.
 
-Default value for C<debug()> in new objects.
+=item $News::Active::READONLY - default value for C<readonly()> in new objects.
 
 =back
 
@@ -50,7 +50,7 @@ Default value for C<debug()> in new objects.
 use strict;
 use News::Active::Entry;
 use Net::NNTP::Functions;
-use vars qw( $DEBUG );
+use vars qw( $DEBUG $READONLY );
 
 $DEBUG = 0;
 
@@ -60,25 +60,33 @@ The following functions give us access to the object class
 
 =over 4
 
-=item new ( FILE )
+=item new ( FILE [, HASH] )
 
 Creates and returns a new News::Active object.  C<FILE> is the filename
 (later accessed with C<filename()>) that we will load old information from
 and save to when we close the object.  It will be created if it doesn't
 already exist, and read (with C<read()>) from if it does.
 
+If C<HASH> is offered, its possible values:
+
+  debug			Print debugging information when using this 
+			object.  Defaults to $DEBUG.
+  readonly		Don't write anything back out with this object
+			when we're done with it.  Defaults to $READONLY.
+
 Returns undef on failure, or the object on success.
 
 =cut
 
 sub new {
-  my ($proto, $file) = @_;
+  my ($proto, $file, %hash) = @_;
   return undef unless $file;
   my $class = ref($proto) || $proto;
   my $self = {
 	Groups   => 	{ },
   	FileName =>     $file,
-        Debug    =>     $DEBUG,
+        Debug    =>     $hash{'debug'}    || $DEBUG    || 0,
+        ReadOnly =>     $hash{'readonly'} || $READONLY || 0,
   	     };
   bless $self, $class;
   $self->read($file);
@@ -99,11 +107,17 @@ information.
 
 Returns true if we want to print debugging information, false otherwise.  
 
+=item readonly ()
+
+Returns true if we shouldn't write out the information later, false
+otherwise.  
+
 =cut
 
 sub groups   { shift->{Groups}   || {} }
 sub filename { shift->{FileName} || undef }
-sub debug    { shift->{Debug} || $DEBUG || 0 }
+sub debug    { shift->{Debug}    || 0 }
+sub readonly { shift->{ReadOnly} || 0 }
 
 =item entry ( GROUP )
 
@@ -271,7 +285,8 @@ sub output {
 =item write ( [FILE] )
 
 Using the information from output(), writes out to C<FILE> (or the value
-of C<file()>).  Returns 1 on success, undef otherwise.
+of C<file()>).  Returns 1 on success, undef otherwise.  If the readonly 
+flag is set, we don't actually write anything back out.
 
 Note that this function is called when the object is destroyed as well.
 
@@ -279,6 +294,10 @@ Note that this function is called when the object is destroyed as well.
 
 sub write {
   my ($self, $file) = @_;
+  if ( $self->readonly ) { 
+    warn "Not writing output, readonly!\n" if $self->debug; 
+    return 1; 
+  }
   $file ||= $self->filename;  
   return undef unless $file;
   print "Writing to $file\n" if $self->debug;
@@ -350,3 +369,5 @@ Copyright 2003-2004, Tim Skirvin.
 ### First documented version; it's been working since last year, though.
 # v0.11		Wed Apr 28 11:06:26 CDT 2004 
 ### Added the matching stuff from Net::NNTP::Functions.
+# v0.12		Tue May 25 11:21:03 CDT 2004 
+### Added read-only stuff.

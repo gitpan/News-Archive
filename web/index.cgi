@@ -18,7 +18,7 @@ $TITLE ||= "News::Archive";
 
 $DEBUG ||= 0;
 
-%OPTIONS = ( 'basedir' => $KIBOZEDIR );
+%OPTIONS = ( 'basedir' => $KIBOZEDIR, 'readonly' => 1 );
 
 ## These are references to code that will output the headers and footers
 ## for the messages.  If you want to change these, you can either modify

@@ -1,8 +1,8 @@
-$VERSION = "0.11";
+$VERSION = "0.12";
 package News::Archive;
-our $VERSION = "0.11";
+our $VERSION = "0.12";
 
-# -*- Perl -*- 		# Wed Apr 28 16:59:58 CDT 2004 
+# -*- Perl -*- 		Tue May 25 11:03:36 CDT 2004 
 ###############################################################################
 # Written by Tim Skirvin <tskirvin@killfile.org>.  Copyright 2003-2004,
 # Tim Skirvin.  Redistribution terms are below.
@@ -101,7 +101,7 @@ lighter-weight INN.
 ###############################################################################
 ### Variables #################################################################
 ###############################################################################
-use vars qw( $DEBUG $HOSTNAME $ERROR $HASH );
+use vars qw( $DEBUG $HOSTNAME $ERROR $HASH $READONLY );
 
 =head2 Global Variables
 
@@ -139,7 +139,12 @@ $HASH       = 500;	  # How many articles should we hash directories off at?
 
 ## Internal only - default error string.  We're not currently using this
 ## well, and may never be, so let's not talk about it in the docs much.
+
 $ERROR 	    = "";	  
+
+## Should we open things read-only by default?
+
+$READONLY = 0;
 
 =back
 
@@ -192,6 +197,7 @@ information for this object; currently supported options:
 		Defaults to $News::Archive::HOSTNAME.
   debug		Should we print debugging information?  Defaults to
 		$News::Archive::DEBUG.
+  readonly	Should we open this read-only?  
 
 Returns the blessed object on success, or undef on failure.
 
@@ -208,7 +214,8 @@ sub new          {
   my $self = {
 	'group'	         => undef,
 	'pointer'        => 0,
-	'archives'       => $hash{'archives'}  || "$basedir/archives",
+	'readonly'	 => $hash{'readonly'}    || $READONLY || 0,
+	'archives'       => $hash{'archives'}    || "$basedir/archives",
 	'historyfile'    => $hash{'historyfile'} || "$basedir/history",
 	'activefile'     => $hash{'activefile'}  || "$basedir/active",
 	'overfilename'   => $hash{'overfile'}  || ".overview",
@@ -228,13 +235,15 @@ sub new          {
 
 Returns the News::Active object based on C<activefile>, set in new().  If
 this object has not already been opened and created, creates it;
-otherwise, just returns the existing object.
+otherwise, just returns the existing object.  Passes on the 'readonly'
+flag.
 
 =cut
 
 sub activefile { 
   my ($self) = @_;
-  $$self{'active'} ||= new News::Active($$self{activefile});
+  $$self{'active'} ||= new News::Active($$self{activefile}, 
+					'readonly' => $$self{readonly});
   $$self{'active'};
 }
 
@@ -247,7 +256,7 @@ Writes out and closes the News::GroupInfo object.
 sub activeclose {
   my ($self) = @_;
   return 1 unless $$self{'active'};
-  $self->activefile->write;
+  unless ($$self{readonly}) { $self->activefile->write; } 
   $$self{'active'} = undef;
   1;
 }
@@ -256,13 +265,15 @@ sub activeclose {
 
 Returns the News::GroupInfo object based on C<groupinfofile>, set in
 new().  If this object has not already been opened and created, creates
-it; otherwise, just returns the existing object.
+it; otherwise, just returns the existing object.  Passes on the 'readonly'
+flag.
 
 =cut
 
 sub groupinfo {
   my ($self) = @_;
-  $$self{'groupinfo'} ||= new News::GroupInfo($$self{groupinfofile});
+  $$self{'groupinfo'} ||= new News::GroupInfo($$self{groupinfofile},
+					'readonly' => $$self{readonly});
   $$self{'groupinfo'};
 }
 
@@ -275,7 +286,7 @@ Writes out and closes the News::GroupInfo object.
 sub groupclose {
   my ($self) = @_;
   return 1 unless $$self{'groupinfo'};
-  $self->groupinfo->write;
+  unless ($$self{readonly}) { $self->groupinfo->write; }
   $$self{'groupinfo'} = undef;
   1;
 }
@@ -345,8 +356,10 @@ sub _tie {
   my %tie;
   if ($class eq 'DB_File' || $class eq 'SDBM_File') { 
     require "$class.pm";
-    tie %tie, $class, $file, O_CREAT|O_RDWR, 0755
-	or ( warn "Couldn't tie $file: $!\n" & return ()); 
+    my $opentype = $$self{readonly} ? O_RDONLY : O_CREAT|O_RDWR;
+    # warn "Opening with type $opentype\n";
+    tie %tie, $class, $file, $opentype, 0755
+	  or ( warn "Couldn't tie $file: $!\n" & return ()); 
   } else { %tie = () }
   \%tie;
 }
@@ -1146,3 +1159,5 @@ Copyright 2003-2004, Tim Skirvin.
 # v0.11		Thu Apr 29 10:15:51 CDT 2004 
 ### Using '1.500' instead of '1-500', to make sure there's no collisions
 ### with actual groupnames.  groupclose() and activeclose().
+# v0.12		YDAT E
+### Trying to add a 'read-only' aspect to this.

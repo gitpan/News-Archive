@@ -17,12 +17,14 @@ Dependencies
 To use News::Archive, you will need the following packages (available in
 CPAN or in the URLs below):
 
-NewsLib 		http://www.killfile.org/~tskirvin/software/newslib
-News::Overview 		http://www.killfile.org/~tskirvin/software/news-overview
-News::Web 		http://www.killfile.org/~tskirvin/software/news-web
-News::Newsrc
-FileHandle::Unget
-WeakRef
+NewsLib 	      http://www.killfile.org/~tskirvin/software/newslib/
+News::Overview 	      http://www.killfile.org/~tskirvin/software/news-overview/
+News::Web 	      http://www.killfile.org/~tskirvin/software/news-web/
+
+News::Newsrc	      (available through CPAN)
+FileHandle::Unget     (available through CPAN)
+WeakRef		      (available through CPAN)
+Date::Parse	      (available through CPAN)
 
 Installation Instructions
 =========================

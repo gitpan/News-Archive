@@ -1,8 +1,8 @@
-$VERSION = "0.12";
+$VERSION = "0.13";
 package News::Active;
-our $VERSION = "0.12";
+our $VERSION = "0.13";
 
-# -*- Perl -*-          Tue May 25 11:25:03 CDT 2004 
+# -*- Perl -*-          Tue May 25 14:35:18 CDT 2004 
 ###############################################################################
 # Written by Tim Skirvin <tskirvin@killfile.org>.  Copyright 2003-2004,
 # Tim Skirvin.  Redistribution terms are below.
@@ -48,11 +48,13 @@ to use and understand, as it is only a subsection of C<News::Archive>.
 ###############################################################################
 
 use strict;
+use warnings;
 use News::Active::Entry;
 use Net::NNTP::Functions;
 use vars qw( $DEBUG $READONLY );
 
-$DEBUG = 0;
+$DEBUG    = 0;
+$READONLY = 0;
 
 =head2 Basic Functions 
 
@@ -87,6 +89,7 @@ sub new {
   	FileName =>     $file,
         Debug    =>     $hash{'debug'}    || $DEBUG    || 0,
         ReadOnly =>     $hash{'readonly'} || $READONLY || 0,
+        Changed  =>     0,
   	     };
   bless $self, $class;
   $self->read($file);
@@ -166,9 +169,12 @@ our subscription list.  Returns 1 on success, undef otherwise.
 sub subscribe { 
   my ($self, $group) = @_;
   return undef unless $group;
-  # return 1 if $self->subscribed($group); 
+  return 1 if $self->subscribed($group); 
   print "Subscribing to $group\n" if $self->debug;
-  $self->groups->{$group} ||= new News::Active::Entry($group);
+  $self->{Changed}++;
+  $self->groups->{$group} = new News::Active::Entry($group);
+  # warn "G2: $group ", $self->groups->{$group}, "\n";
+  # foreach (keys %{$self->groups}) { warn "G3: $_\n"; }
   1;
 }
 
@@ -186,6 +192,7 @@ sub unsubscribe {
   return 1 unless $self->groups->{$group};
   print "Unsubscribing from $group\n" if $self->debug;
   delete $self->groups->{$group};
+  $self->{Changed}++;
   1;
 }
 
@@ -210,6 +217,7 @@ Invokes C<News::Active::add_article()> on the entry for C<GROUP>.
 sub add_article {
   my ($self, $group, @args) = @_;
   my $entry = $self->entry($group) || return undef;
+  $self->{Changed}++;
   $entry->add_article(@args);
 }
 
@@ -244,6 +252,7 @@ sub read {
     $self->groups->{$entry->name} = $entry;
   }  
   close FILE;  
+  $self->{Changed}++;
   1;
 }
 
@@ -294,6 +303,10 @@ Note that this function is called when the object is destroyed as well.
 
 sub write {
   my ($self, $file) = @_;
+  if ( !$self->{Changed} ) { 
+    warn "Nothing changed, not writing\n" if $self->debug;  
+    return 1;
+  } 
   if ( $self->readonly ) { 
     warn "Not writing output, readonly!\n" if $self->debug; 
     return 1; 
@@ -305,6 +318,7 @@ sub write {
 	or (warn "Couldn't write to $file: $!\n" && return undef);
   print FILE join("\n", $self->output);
   close FILE;
+  $self->{Changed} = 0;
   1;
 }
 
@@ -318,7 +332,7 @@ sub write {
 
 ### DESTROY
 # Item destructor.  Make sure the file is written back out.
-sub DESTROY { shift->write }
+# sub DESTROY { shift->write }
 
 1;
 
@@ -371,3 +385,5 @@ Copyright 2003-2004, Tim Skirvin.
 ### Added the matching stuff from Net::NNTP::Functions.
 # v0.12		Tue May 25 11:21:03 CDT 2004 
 ### Added read-only stuff.
+# v0.13		Tue May 25 14:34:25 CDT 2004 
+### Doesn't automatically write on close anymore.

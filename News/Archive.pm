@@ -1,8 +1,8 @@
-$VERSION = "0.12";
+$VERSION = "0.13";
 package News::Archive;
-our $VERSION = "0.12";
+our $VERSION = "0.13";
 
-# -*- Perl -*- 		Tue May 25 11:03:36 CDT 2004 
+# -*- Perl -*- 		Tue May 25 14:37:47 CDT 2004 
 ###############################################################################
 # Written by Tim Skirvin <tskirvin@killfile.org>.  Copyright 2003-2004,
 # Tim Skirvin.  Redistribution terms are below.
@@ -155,6 +155,7 @@ $READONLY = 0;
 ###############################################################################
 
 use strict;
+use warnings;
 use News::Article;
 use News::Overview;
 use News::Active;
@@ -256,8 +257,8 @@ Writes out and closes the News::GroupInfo object.
 sub activeclose {
   my ($self) = @_;
   return 1 unless $$self{'active'};
-  unless ($$self{readonly}) { $self->activefile->write; } 
-  $$self{'active'} = undef;
+  $self->activefile->write; 
+  delete $$self{'active'};
   1;
 }
 
@@ -286,7 +287,7 @@ Writes out and closes the News::GroupInfo object.
 sub groupclose {
   my ($self) = @_;
   return 1 unless $$self{'groupinfo'};
-  unless ($$self{readonly}) { $self->groupinfo->write; }
+  $self->groupinfo->write;
   $$self{'groupinfo'} = undef;
   1;
 }
@@ -336,7 +337,12 @@ Close all open files.
 
 =cut
 
-sub close { DESTROY }
+sub close { 
+  my $self = shift;
+  $self->groupclose;
+  $self->activeclose;
+  untie %{$self->{history}};
+}
 
 =back
 
@@ -357,7 +363,6 @@ sub _tie {
   if ($class eq 'DB_File' || $class eq 'SDBM_File') { 
     require "$class.pm";
     my $opentype = $$self{readonly} ? O_RDONLY : O_CREAT|O_RDWR;
-    # warn "Opening with type $opentype\n";
     tie %tie, $class, $file, $opentype, 0755
 	  or ( warn "Couldn't tie $file: $!\n" & return ()); 
   } else { %tie = () }
@@ -382,10 +387,7 @@ sub _mkdir_full {
 # Item destructor.  Untie the active and history information.
 sub DESTROY {
   my $self = shift;
-  untie %{$self->{active}};
-  untie %{$self->{history}};
-  $self->groupclose;
-  $self->activeclose;
+  $self->close;
 }
 
 ###############################################################################
@@ -956,7 +958,7 @@ sub save_article {
       print "Writing $messageid to $file\n" if $self->debug;
       open(FILE, ">$file") or return undef;
       $article->write(\*FILE);
-      close FILE;
+      CORE::close FILE;
       $active->add_article;
     }
 
@@ -1030,7 +1032,7 @@ sub overview_add {
   my $filename = join('/', $dir, $$self{overfilename});
   open(OVER, ">>$filename") or next;
   print OVER $over->print, "\n";
-  close OVER;
+  CORE::close OVER;
 
   1;
 }
@@ -1057,7 +1059,7 @@ sub overview_read {
     next if $_ < $first;  next if ($last > $first and $_ > $last);
     $over->add_xover($_) 
   }
-  close OVER;
+  CORE::close OVER;
 
   $hdr ?  $over->xover($match, $hdr) : $over->xover($match);
 }
@@ -1159,5 +1161,8 @@ Copyright 2003-2004, Tim Skirvin.
 # v0.11		Thu Apr 29 10:15:51 CDT 2004 
 ### Using '1.500' instead of '1-500', to make sure there's no collisions
 ### with actual groupnames.  groupclose() and activeclose().
-# v0.12		YDAT E
+# v0.12		Tue May 25 11:03:36 CDT 2004 
 ### Trying to add a 'read-only' aspect to this.
+# v0.13		Tue May 25 14:37:13 CDT 2004 
+### Some changes in how it writes stuff out.  DESTROY isn't the default
+### now, close() is.  Also, added 'use warnings'.

@@ -4,13 +4,13 @@
 # Written by Tim Skirvin <tskirvin@killfile.org>.  Copyright 2004, Tim Skirvin. 
 # Redistribution terms are below.
 ###############################################################################
-our $VERSION = "0.11";
+our $VERSION = "0.12";
 
 ###############################################################################
 ### User Configuration ########################################################
 ###############################################################################
 use vars qw( $LOCALCONF $KIBOZEDIR $DB_TYPE $ARCHIVEGROUP $DEBUG $QUIET
-	      $VERBOSE );
+	      $VERBOSE $MAX );
 
 ## Rather than having everything in this shared configuration, load this
 ## file to get additional configuration.  This file contains additional
@@ -37,6 +37,11 @@ $ARCHIVEGROUP = "";
 $DEBUG    = 0;
 $VERBOSE  = 0;
 $QUIET    = 0;
+
+## How many articles should we get, maximum?  Set to '0' to just get all
+## of them.
+
+$MAX = 0;
 
 ## If the modules are set up in a non-standard place, edit this line 
 ## as appropriate.
@@ -99,13 +104,14 @@ my $directory = shift @ARGV || Usage();
 
 Exit('CONFIG', "No such directory: $directory") unless (-d $directory);
 
+$|++; 
+
 our $COUNT = 0;
 File::Find::finddepth({wanted => \&wanted}, $directory);
 my $groups = $archive->activefile;
 my $hash = $groups->groups;
-foreach (keys %{$hash}) { 
-  print "$_: $$hash{$_}\n"; 
-}
+# foreach (keys %{$hash}) { print "$_: $$hash{$_}\n"; }
+# foreach (keys %{$groups}) { print "$_: $$groups{$_}\n"; }
 $archive->close;
 Exit('SUCCESS', "$COUNT articles archived");
 
@@ -145,6 +151,7 @@ sub archive {
   $COUNT++ if $ret;
   if ($VERBOSE) { warn $ret ? "Accepted article $messageid\n"
 			    : "Couldn't save article $messageid\n" }
+  $ret ? 1 : 0;
 }
 
 ###############################################################################
@@ -153,8 +160,10 @@ sub archive {
 
 sub wanted {
   my ($dev,$ino,$mode,$nlink,$uid,$gid);
+  return "" if ($MAX > 0 && $COUNT >= $MAX);
   (($dev,$ino,$mode,$nlink,$uid,$gid) = lstat($_)) && ! -d _ && /^[0-9]+$/s
-	&& (print "$name\n") && archive($name);
+	&& archive($name)
+	&& ( print "$name\n" );
 }
 
 ## Usage ()
@@ -308,3 +317,5 @@ Copyright 2003-2004, Tim Skirvin <tskirvin@killfile.org>
 ###############################################################################
 # v0.11		Thu Apr 29 13:03:44 CDT 2004 
 ### First real version.
+# v0.12		Tue May 25 14:40:26 CDT 2004 
+### Offered some ways to only get a subset of the articles.

@@ -1,5 +1,10 @@
 Revision history for Perl extension News::Archive
 
+0.14		Tue May 25 14:38:31 CDT 2004 
+	- 'use warnings' through many modules.  Fixes to CGIs and various
+	  scripts.  Changed write-out behaviour of News::Active and
+	  News::GroupInfo.
+
 0.13		Tue May 25 12:42:19 CDT 2004
 	- Added 'readonly' bits; it'll tide us over until we've got 
 	  file locking done.

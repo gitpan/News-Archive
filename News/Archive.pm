@@ -325,7 +325,7 @@ Close all open files.
 
 =cut
 
-sub close { DESTROY(@_); }
+sub close { DESTROY }
 
 =back
 
@@ -656,7 +656,17 @@ though.
 
 =cut
 
-sub subscriptions { [ keys %{active(@_)} ] }	
+sub subscriptions { # [ keys %{active(@_)} ] }	
+  my ($self, $pattern) = @_;
+  $pattern ||= '*';
+  my %return;
+  foreach my $item ($self->groupinfo->entries($pattern)) {
+    next unless wildmat($pattern, $item->name);	# Is this necessary?
+    $return{$item->name} = $item->arrayref;
+  }
+  [ keys %return ];
+  # \%return; 
+}
 
 =item overview_fmt ()
 
@@ -1077,7 +1087,7 @@ this should be much more helpful.
 
 Start using the AutoLoader (or something like it)
 
-File locking across the board.
+File locking across the board, along with read-only opens.
 
 Close and re-open the databases periodically, to write stuff out while in
 the middle of an operation.

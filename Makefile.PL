@@ -14,7 +14,7 @@ foreach my $module (
   my $man3 = join('/', '$(INST_MAN3DIR)', "$module.3");
   $$modules{$file} = $libdir; $$man3page{$file} = $man3;
 }
-$$man3page{'kibozerc.pod'} = "$INST_MAN3DIR/kibozerc.3";
+$$man3page{'kibozerc.pod'} = join('/', '$(INST_MAN3DIR)', "kibozerc.3");
 
 my $man1page = {};
 foreach my $script ( qw( kiboze.pl mbox2news.pl ) ) {
@@ -27,7 +27,7 @@ WriteMakefile(
     'DISTNAME'     => 'News-Archive',
     'MAN3PODS'     => $man3page,
     'MAN1PODS'	   => $man1page,
-    'VERSION_FROM' => 'News/Archive.pm', # finds $VERSION
+    'VERSION_FROM' => 'Version.pm', # finds $VERSION
     'PREREQ_PM'    => { 'Net::NNTP::Functions' => 0.21,
 			'News::Article' => 1.27, 'Net::NNTP' => 2.19,
 			'Mail::Mbox::MessageParser' => 1.14, 

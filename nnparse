@@ -9,7 +9,6 @@ my $prefix = "invalid.notrealid";
 my $domain = "news.killfile.org";
 our $LOGDIR = "/home/tskirvin/news/posts/bymonth";
 
-use lib '/home/tskirvin/dev/news-archive'; 
 use News::Article::Mbox;
 
 my @articles = News::Article::Mbox->read_mbox(\*STDIN);
